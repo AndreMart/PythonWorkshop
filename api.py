@@ -1,5 +1,6 @@
 from asyncio.proactor_events import _ProactorBasePipeTransport
 import os
+from urllib import response
 
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
@@ -7,6 +8,7 @@ import dotenv
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 from marshmallow import Schema, fields
+import json
 
 dotenv.load_dotenv()
 
@@ -55,13 +57,16 @@ class StudentSchema(Schema):
     age = fields.Integer()
     cellphone = fields.Str()
 
+with open("apidoc.json") as file:
+        datafile = json.load(file)
+
 @app.route('/', methods = ['GET'])
 def home():
     return '<p>Hello from students API!</p>', 200
 
 @app.route('/api', methods = ['GET'])
 def api_main():
-    return jsonify('Hello, World!'), 200
+    return jsonify(datafile), 200
 
 @app.route('/api/students', methods=['GET'])
 def get_all_students():
@@ -81,15 +86,61 @@ def get_student(id):
 def add_student():
     json_data = request.get_json()
     new_student = Student(
-        name= json_data.get('name'),
-        email=json_data.get('email'),
-        age=json_data.get('age'),
-        cellphone=json_data.get('cellphone')
+        name = json_data.get('name'),
+        email = json_data.get('email'),
+        age = json_data.get('age'),
+        cellphone = json_data.get('cellphone')
     )
     new_student.save()
     serializer = StudentSchema()
     data = serializer.dump(new_student)
     return jsonify(data), 201
+
+@app.route('/api/students/delete/<int:id>', methods = ['DELETE'])
+def delete_student(id):
+    student_id = Student.get_by_id(id)
+    response = Student.delete(student_id)
+    return jsonify(response), 200
+
+@app.route('/api/students/modify/<int:id>', methods = ['PATCH'])
+def modify_student(id):
+    student_id = Student.get_by_id(id)
+    json_data = request.get_json()
+    if json_data.get('name'):
+        student_id.name = json_data.get('name')
+    if json_data.get('email'):
+        student_id.email = json_data.get('email')
+    if json_data.get('age'):
+        student_id.age = json_data.get('age')
+    if json_data.get('cellphone'):
+        student_id.cellphone = json_data.get('cellphone') 
+    student_id.save()
+    serializer = StudentSchema()
+    data = serializer.dump(student_id)
+    return jsonify(data), 200     
+
+
+@app.route('/api/students/change/<int:id>', methods = ['PUT'])
+def change_student(id):
+    student_id = Student.get_by_id(id)
+    json_data = request.get_json()
+    student_id.name = json_data.get('name')
+    student_id.email = json_data.get('email')
+    student_id.age = json_data.get('age')
+    student_id.cellphone = json_data.get('cellphone') 
+    student_id.save()
+    serializer = StudentSchema()
+    data = serializer.dump(student_id)
+    return jsonify(data), 200   
+
+@app.route('/api/health-check/ok', methods = ['GET'])
+def healthy():
+    return 'OK', 200
+
+@app.route('/api/health-check/bad', methods = ['GET'])
+def not_healthy():
+    return 'BAD', 500
+
 
 if __name__ == '__main__':
     if not database_exists(engine.url):
