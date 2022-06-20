@@ -113,25 +113,22 @@ def modify_student(id):
     student_id.save()
     serializer = StudentSchema()
     data = serializer.dump(student_id)
-    return jsonify(data), 200    
+    return jsonify(data), 200     
 
 
 @app.route('/api/students/change/<int:id>', methods = ['PUT'])
 def change_student(id):
     student_id = Student.get_by_id(id)
     json_data = request.get_json()
-    if json_data.get('name'):
-        student_id.name = json_data.get('name')
-    if json_data.get('email'):
-        student_id.email = json_data.get('email')
-    if json_data.get('age'):
-        student_id.age = json_data.get('age')
-    if json_data.get('cellphone'):
-        student_id.cellphone = json_data.get('cellphone') 
+    student_id.name = json_data.get('name')
+    student_id.email = json_data.get('email')
+    student_id.age = json_data.get('age')
+    student_id.cellphone = json_data.get('cellphone') 
     student_id.save()
     serializer = StudentSchema()
     data = serializer.dump(student_id)
     return jsonify(data), 200   
+    
 
 if __name__ == '__main__':
     if not database_exists(engine.url):
