@@ -8,6 +8,7 @@ import dotenv
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 from marshmallow import Schema, fields
+import json
 
 dotenv.load_dotenv()
 
@@ -56,13 +57,16 @@ class StudentSchema(Schema):
     age = fields.Integer()
     cellphone = fields.Str()
 
+with open("apidoc.json") as file:
+        datafile = json.load(file)
+
 @app.route('/', methods = ['GET'])
 def home():
     return '<p>Hello from students API!</p>', 200
 
 @app.route('/api', methods = ['GET'])
 def api_main():
-    return jsonify('Hello, World!'), 200
+    return jsonify(datafile), 200
 
 @app.route('/api/students', methods=['GET'])
 def get_all_students():
@@ -128,7 +132,19 @@ def change_student(id):
     serializer = StudentSchema()
     data = serializer.dump(student_id)
     return jsonify(data), 200   
-    
+
+@app.route('/api/health-check/ok', methods = ['GET'])
+def healthy():
+    db.engine.execute('SELECT 1')
+
+    return 'OK', 200
+
+@app.route('/api/health-check/bad', methods = ['GET'])
+def not_healthy():
+    db.engine.execute('SELECT 1')
+
+    return 'BAD', 500
+
 
 if __name__ == '__main__':
     if not database_exists(engine.url):
